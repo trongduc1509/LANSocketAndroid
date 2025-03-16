@@ -1,4 +1,4 @@
-package com.example.lansocketandroid.ui.theme
+package com.example.lansocketandroid.presentation.ui.theme
 
 import android.app.Activity
 import android.os.Build
