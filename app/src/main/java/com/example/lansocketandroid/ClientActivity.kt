@@ -15,14 +15,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Modifier
+import com.example.lansocketandroid.app.communicator.RealClientCommunicator
 import com.example.lansocketandroid.presentation.client.ClientScreen
+import com.example.lansocketandroid.presentation.client.ClientViewModel
 import com.example.lansocketandroid.presentation.ui.theme.LANSocketAndroidTheme
 
 class ClientActivity : ComponentActivity() {
+    private val communicator = RealClientCommunicator()
+    private val viewModel = ClientViewModel(communicator)
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        viewModel.subscribeToCommunicator()
         setContent {
             LANSocketAndroidTheme {
                 Scaffold(
@@ -50,6 +56,7 @@ class ClientActivity : ComponentActivity() {
 
                 ) { innerPadding ->
                     ClientScreen(
+                        viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

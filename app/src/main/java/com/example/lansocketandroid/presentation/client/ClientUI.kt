@@ -24,6 +24,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,17 +37,20 @@ import androidx.compose.ui.unit.dp
 import com.example.lansocketandroid.presentation.widget.ChatBubbleUI
 
 @Composable
-fun ClientScreen(modifier: Modifier = Modifier) {
+fun ClientScreen(
+    viewModel: ClientViewModel,
+    modifier: Modifier = Modifier,
+) {
     var serverIP by remember { mutableStateOf("") }
     var portNum: Int? by remember { mutableStateOf(null) }
+
+    val messages by viewModel.messages.observeAsState(mutableListOf())
 
     var inputMessage: String by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    val tempMessages: Array<String> = Array<String>(15) { i -> "TEMP messages$i" };
-
-    LaunchedEffect(key1 = tempMessages) {
-        if (tempMessages.isNotEmpty()) {
+    LaunchedEffect(key1 = messages) {
+        if (messages.isNotEmpty()) {
             listState.scrollToItem(0)
         }
     }
@@ -68,7 +72,7 @@ fun ClientScreen(modifier: Modifier = Modifier) {
                 placeholder = {
                     Text(text = "Input Server's IP")
                 },
-                onValueChange = {value -> serverIP = value}
+                onValueChange = { value -> serverIP = value }
             )
         }
         Row(
@@ -82,7 +86,7 @@ fun ClientScreen(modifier: Modifier = Modifier) {
                 placeholder = {
                     Text(text = "Input Port Number")
                 },
-                onValueChange = {value -> portNum = value.toInt()},
+                onValueChange = { value -> portNum = value.toInt() },
                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
             )
         }
@@ -91,7 +95,11 @@ fun ClientScreen(modifier: Modifier = Modifier) {
 
         Button(
             modifier = Modifier.align(alignment = Alignment.End),
-            onClick = { /*TODO*/ }
+            onClick = {
+                if (serverIP.isNotEmpty() && portNum != null) {
+                    viewModel.connectToServer(serverIP, portNum!!)
+                }
+            }
         ) {
             Text("Connect to server")
         }
@@ -109,7 +117,7 @@ fun ClientScreen(modifier: Modifier = Modifier) {
                 reverseLayout = true,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                items(tempMessages.reversed()) { message ->
+                items(messages.reversed()) { message ->
                     ChatBubbleUI(message = message)
                 }
             }
@@ -132,7 +140,12 @@ fun ClientScreen(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(8.dp))
 
             Button(
-                onClick = {},
+                onClick = {
+                    if (inputMessage.isNotEmpty()) {
+                        viewModel.sendMessage(inputMessage);
+                        inputMessage = "";
+                    }
+                },
             ) {
                 Text("Send")
             }

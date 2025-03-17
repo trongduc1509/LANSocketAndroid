@@ -23,8 +23,8 @@ fun ChatBubbleUI(
             .background(
                 if (message
                         .lowercase()
-                        .startsWith("Client:")
-                ) Color.Blue else Color.Gray,
+                        .startsWith("client:")
+                ) Color.Magenta else Color.Gray,
                 shape = MaterialTheme.shapes.medium,
             )
             .padding(8.dp)
