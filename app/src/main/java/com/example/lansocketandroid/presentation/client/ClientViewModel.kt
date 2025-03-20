@@ -15,11 +15,36 @@ class ClientViewModel(
     private val _messages = MutableLiveData<List<String>>(mutableListOf());
     val messages: LiveData<List<String>> = _messages;
 
-    private val communicationListener =
-        ClientCommunicationListener { message -> addMessages(message) }
+    private val _isConnected = MutableLiveData<Boolean>(false);
+    val isConnected: LiveData<Boolean> = _isConnected;
+
+    private val _error = MutableLiveData<String?>(null);
+    val error: LiveData<String?> = _error;
+
+    private val communicationListener = object : ClientCommunicationListener {
+        override fun onConnected() {
+            _isConnected.postValue(true);
+        }
+
+        override fun onReceivedMessage(message: String) {
+            addMessages(message);
+        }
+
+        override fun onDisconnected() {
+            _isConnected.postValue(false);
+        }
+
+        override fun onError(error: String?) {
+            _error.postValue(error);
+        }
+    }
 
     fun subscribeToCommunicator() {
         clientCommunicator.subscribeListener(communicationListener);
+    }
+
+    private fun unsubscribeFromCommunicator() {
+        clientCommunicator.unsubscribeListener(communicationListener);
     }
 
     fun connectToServer(ipAddress: String, port: Int) {
@@ -34,9 +59,21 @@ class ClientViewModel(
         }
     }
 
+    fun disconnect() {
+        viewModelScope.launch(Dispatchers.IO) {
+            clientCommunicator.disconnect();
+        }
+    }
+
     private fun addMessages(message: String) {
         val currentMessages = _messages.value?.toMutableList() ?: mutableListOf();
         currentMessages.add(message);
         _messages.postValue(currentMessages);
+    }
+
+    override fun onCleared() {
+        disconnect()
+        unsubscribeFromCommunicator()
+        super.onCleared()
     }
 }

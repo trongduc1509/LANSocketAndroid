@@ -3,6 +3,8 @@ package com.example.lansocketandroid.app;
 import androidx.lifecycle.LiveData;
 
 public interface ClientCommunicator {
+    Boolean isConnected();
+
     void connect(String ipAddress, int port);
 
     void disconnect();
