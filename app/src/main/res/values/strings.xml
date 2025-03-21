@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LANSocketAndroid</string>
+    <string name="server_screen">ServerScreen</string>
+    <string name="client_screen">ClientScreen</string>
 </resources>
