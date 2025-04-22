@@ -4,68 +4,71 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lansocketandroid.app.ClientCommunicationListener
-import com.example.lansocketandroid.app.ClientCommunicator
+import com.example.lansocketandroid.domain.repository.CommunicatorControlRepository
+import com.example.lansocketandroid.domain.repository.CommunicatorSendingRepository
+import com.example.lansocketandroid.domain.repository.CommunicatorStreamRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ClientViewModel(
-    private val clientCommunicator: ClientCommunicator,
+    private val controlRepository: CommunicatorControlRepository,
+    private val sendingRepository: CommunicatorSendingRepository,
+    private val streamRepository: CommunicatorStreamRepository,
 ) : ViewModel() {
     private val _messages = MutableLiveData<List<String>>(mutableListOf());
     val messages: LiveData<List<String>> = _messages;
 
-    private val _isConnected = MutableLiveData<Boolean>(false);
-    val isConnected: LiveData<Boolean> = _isConnected;
-
-    private val _error = MutableLiveData<String?>(null);
-    val error: LiveData<String?> = _error;
-
-    private val communicationListener = object : ClientCommunicationListener {
-        override fun onConnected() {
-            _isConnected.postValue(true);
-        }
-
-        override fun onReceivedMessage(message: String) {
-            addMessages(message);
-        }
-
-        override fun onDisconnected() {
-            _isConnected.postValue(false);
-        }
-
-        override fun onError(error: String?) {
-            _error.postValue(error);
-        }
-    }
-
-    fun subscribeToCommunicator() {
-        clientCommunicator.subscribeListener(communicationListener);
-    }
-
-    private fun unsubscribeFromCommunicator() {
-        clientCommunicator.unsubscribeListener(communicationListener);
-    }
-
     fun connectToServer(ipAddress: String, port: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            clientCommunicator.connect(ipAddress, port);
+            controlRepository.startConnection(ipAddress, port)
+            startReceivingAndObserving()
         }
     }
 
     fun sendMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            clientCommunicator.sendMessage(message);
+            sendingRepository.sendMessage(message);
         }
+    }
+
+    private fun startReceivingAndObserving() {
+        subscribeToCommunicator()
+        startReceivingMessages()
+    }
+
+    private fun stopReceivingAndObserving() {
+        stopReceivingMessages()
+        unsubscribeToCommunicator()
+    }
+
+    private fun startReceivingMessages() {
+        streamRepository.startReceiving()
+    }
+
+    private fun stopReceivingMessages() {
+        streamRepository.stopReceiving()
+    }
+
+    private fun subscribeToCommunicator() {
+        streamRepository.subscribe{
+            viewModelScope.launch(Dispatchers.Main) {
+                updateMessagesView(it.content);
+            }
+        };
+    }
+
+    private fun unsubscribeToCommunicator() {
+        streamRepository.unsubscribe();
     }
 
     fun disconnect() {
         viewModelScope.launch(Dispatchers.IO) {
-            clientCommunicator.disconnect();
+            stopReceivingAndObserving()
+            controlRepository.stopConnection();
         }
     }
 
-    private fun addMessages(message: String) {
+    private fun updateMessagesView(message: String) {
         val currentMessages = _messages.value?.toMutableList() ?: mutableListOf();
         currentMessages.add(message);
         _messages.postValue(currentMessages);
@@ -73,7 +76,6 @@ class ClientViewModel(
 
     override fun onCleared() {
         disconnect()
-        unsubscribeFromCommunicator()
         super.onCleared()
     }
 }

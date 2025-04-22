@@ -9,20 +9,21 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.lansocketandroid.platform.communicator.CommunicatorControl
 import com.example.lansocketandroid.presentation.client.ClientViewModel
 import com.example.lansocketandroid.presentation.widget.ChatAdapter
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ClientActivity : ComponentActivity() {
 
     private val viewModel by viewModel<ClientViewModel>()
+    private val communicatorControl by inject<CommunicatorControl>()
 
     private lateinit var chatAdapter: ChatAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.subscribeToCommunicator()
-
         setUpUIs()
     }
 
@@ -49,7 +50,7 @@ class ClientActivity : ComponentActivity() {
             rvMessages.scrollToPosition(messages.size - 1)
         }
 
-        viewModel.isConnected.observe(this) { isConnected ->
+        communicatorControl.isConnectionLive.observe(this) { isConnected ->
             etServerIP.isEnabled = !isConnected
             etPort.isEnabled = !isConnected
             btnSend.isEnabled = isConnected
